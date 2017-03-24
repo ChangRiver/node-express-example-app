@@ -10,7 +10,6 @@ var fs = require('fs'),
   errorhandler = require('errorhandler'),
   mongoose = require('mongoose');
 
-require('./models/User');
 
 var isProduction = process.env.NODE_ENV === 'production';
 
@@ -39,6 +38,9 @@ if (isProduction) {
   mongoose.connect('mongodb://localhost/conduit');
   mongoose.set('debug', true);
 }
+
+require('./models/User');
+require('./config/passport');
 
 app.use(require('./routes'));
 
