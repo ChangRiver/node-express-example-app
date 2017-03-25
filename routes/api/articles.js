@@ -85,6 +85,7 @@ router.delete('/:article', auth.required, function (req, res, next) {
   });
 });
 
+// Favorite an article
 router.post('/:article/favorite', auth.required, function (req, res, next) {
   var articleId = req.article._id;
 
@@ -99,6 +100,61 @@ router.post('/:article/favorite', auth.required, function (req, res, next) {
       })
     })
   }).catch(next);
+});
+
+
+// Unfavorite an article
+router.delete('/:article/favorite', auth.required, function (req, res, next) {
+  var articleId = req.article._id;
+
+  User.findById(req.payload.id).then(function (user) {
+    if (!user) {
+      return res.sendStatus(401)
+    }
+
+    return user.unfavorite(articleId).then(function () {
+      return req.article.updateFavoriteCount().then(function (article) {
+        return res.json({article: article.toJSONFor(user)});
+      })
+    })
+  }).catch(next);
+});
+
+
+router.get('/:article/comments', auth.optional, function (req, res, next) {
+  Promise.resolve(req.payload ? User.findById(req.payload.id) : null).then(function (user) {
+    return req.article.populate({
+      path: 'comments',
+      populate: {
+        path: 'author'
+      },
+      options: {
+        sort: {
+          createdAt: 'desc'
+        }
+      }
+    }).execPopulate().then(function (article) {
+      return res.json({
+        comments: req.article.comments.map(function (comment) {
+          return comment.toJSONFor(user);
+        })
+      });
+    });
+  }).catch(next)
+});
+
+
+router.delete('/:article/comments/:comment', auth.required, function (req, res, next) {
+  if (req.comment.author.toString() === req.payload.id.toString()) {
+    req.article.comments.remove(req.comment._id);
+    req.article.save()
+      .then(Comment.find({_id: req.comment._id}).remove().exec())
+      .then(function () {
+        res.sendStatus(204);
+      });
+  } else {
+    res.sendStatus(403);
+  }
 });
 
 
