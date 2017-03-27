@@ -144,6 +144,26 @@ router.get('/:article/comments', auth.optional, function (req, res, next) {
 });
 
 
+router.post('/:article/comments', auth.required, function (req, res, next) {
+  User.findById(req.payload.id).then(function (user) {
+    if (!user) {
+      res.sendStatus(401)
+    }
+
+    var comment = new Comment(req.body.comment);
+    comment.article = req.article;
+    comment.author = user;
+
+    return comment.save().then(function () {
+      req.article.comments.push(comment);
+
+      return req.article.save().then(function (article) {
+        res.json({comment: comment.toJSONFor(user)});
+      })
+    })
+  }).catch(next);
+});
+
 router.delete('/:article/comments/:comment', auth.required, function (req, res, next) {
   if (req.comment.author.toString() === req.payload.id.toString()) {
     req.article.comments.remove(req.comment._id);

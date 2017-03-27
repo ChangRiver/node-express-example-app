@@ -89,6 +89,25 @@ UserSchema.methods.isFavorite = function (id) {
   });
 };
 
+UserSchema.methods.follow = function (id) {
+  if (this.favorites.index(id) === -1) {
+    this.following.push(id);
+  }
+
+  return this.save();
+};
+
+UserSchema.methods.unfollow = function (id) {
+  this.following.remove(id);
+  return this.save();
+};
+
+UserSchema.methods.isFollowing = function (id) {
+  return this.following.some(function (followId) {
+    return followId.toString() === id.toString();
+  })
+};
+
 mongoose.model('User', UserSchema);
 
 
